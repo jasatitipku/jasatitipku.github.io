@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0F172A" />
+  <title>Ambil Orderan — JasaTitipku</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+      background: #0F172A;
+      color: #FFFFFF;
+      overflow: hidden;
+    }
+
+    .container {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.08), transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(74, 222, 128, 0.06), transparent 40%),
+        #0F172A;
+    }
+
+    .card {
+      background: #1E293B;
+      border: 1px solid #334155;
+      border-radius: 24px;
+      padding: 32px 24px;
+      max-width: 400px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #2563EB, #1D4ED8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      box-shadow: 0 8px 24px rgba(37, 99, 235, 0.4);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #FFFFFF;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #94A3B8;
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .order-badge {
+      background: #0F172A;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 24px;
+      font-family: "SF Mono", "Monaco", "Courier New", monospace;
+      font-size: 13px;
+      color: #60A5FA;
+      word-break: break-all;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .order-badge span {
+      flex: 1;
+      text-align: left;
+    }
+
+    .copy-btn {
+      background: #1E293B;
+      border: 1px solid #334155;
+      color: #94A3B8;
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .copy-btn:hover, .copy-btn:active {
+      background: #334155;
+      color: #60A5FA;
+    }
+
+    .spinner {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 16px;
+      border: 3px solid #334155;
+      border-top-color: #60A5FA;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .status-text {
+      font-size: 14px;
+      color: #94A3B8;
+      margin-bottom: 8px;
+    }
+
+    .countdown {
+      font-size: 13px;
+      color: #64748B;
+      margin-top: 4px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 14px;
+      border: none;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+      text-decoration: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: #2563EB;
+      color: #FFFFFF;
+    }
+
+    .btn-primary:hover, .btn-primary:active {
+      background: #1D4ED8;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid #334155;
+      color: #94A3B8;
+    }
+
+    .btn-secondary:hover, .btn-secondary:active {
+      background: #1E293B;
+      color: #60A5FA;
+      border-color: #60A5FA;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 11px;
+      color: #475569;
+      text-align: center;
+    }
+
+    .hidden { display: none !important; }
+
+    .error-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 20px;
+      border-radius: 50%;
+      background: #422006;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 36px;
+      color: #FBBF24;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ===== STATE: LOADING / REDIRECTING ===== -->
+    <div id="cardLoading" class="card">
+      <div class="logo">📦</div>
+      <h1 class="title">Membuka Aplikasi</h1>
+      <p class="subtitle">Menghubungkan ke JasaTitipku...</p>
+
+      <div class="order-badge">
+        <span id="orderIdLoading">-</span>
+        <button class="copy-btn" onclick="copyOrderId()">Salin</button>
+      </div>
+
+      <div class="spinner"></div>
+      <p class="status-text">Mohon tunggu sebentar...</p>
+      <p class="countdown" id="countdown"></p>
+
+      <button class="btn btn-primary hidden" id="btnOpenManual" onclick="openApp()">
+        Buka Aplikasi
+      </button>
+    </div>
+
+    <!-- ===== STATE: ERROR (tidak ada order ID) ===== -->
+    <div id="cardError" class="card hidden">
+      <div class="error-icon">⚠️</div>
+      <h1 class="title">Order ID Tidak Ditemukan</h1>
+      <p class="subtitle">
+        Link tidak valid. Silakan buka ulang link dari grup Telegram.
+      </p>
+      <button class="btn btn-primary" onclick="closePage()">Tutup</button>
+    </div>
+
+    <!-- ===== STATE: APP TIDAK TERINSTALL ===== -->
+    <div id="cardNotInstalled" class="card hidden">
+      <div class="error-icon">📱</div>
+      <h1 class="title">Aplikasi Belum Terinstall</h1>
+      <p class="subtitle">
+        Untuk mengambil orderan, silakan install aplikasi JasaTitipku terlebih dahulu.
+      </p>
+      <div class="order-badge">
+        <span id="orderIdNotInstalled">-</span>
+        <button class="copy-btn" onclick="copyOrderId()">Salin</button>
+      </div>
+      <a class="btn btn-primary" id="btnPlayStore" href="#" target="_blank" rel="noopener">
+        Buka Play Store
+      </a>
+      <button class="btn btn-secondary" onclick="openApp()">
+        Coba Buka Aplikasi Lagi
+      </button>
+    </div>
+
+    <p class="footer">JasaTitipku © 2026</p>
+  </div>
+
+  <script>
+    // ==========================================
+    // KONFIGURASI
+    // ==========================================
+    const CONFIG = {
+      // Scheme deep link aplikasi (sesuai AndroidManifest)
+      deepLinkScheme: "myapp",
+      deepLinkHost: "driver",
+      deepLinkPathPrefix: "/order/",
+
+      // Package name untuk Play Store fallback
+      packageName: "com.jasatitipku.app",
+
+      // Waktu tunggu sebelum show fallback (ms)
+      redirectTimeout: 2500,
+    };
+
+    // ==========================================
+    // STATE
+    // ==========================================
+    let orderId = null;
+    let redirectTimeoutId = null;
+    let countdownIntervalId = null;
+    let appOpened = false;
+
+    // ==========================================
+    // INIT
+    // ==========================================
+    window.addEventListener("load", function () {
+      orderId = getQueryParam("id");
+
+      if (!orderId || !isValidOrderId(orderId)) {
+        showCard("cardError");
+        return;
+      }
+
+      // Set order ID di semua kartu
+      document.getElementById("orderIdLoading").textContent = orderId;
+      document.getElementById("orderIdNotInstalled").textContent = orderId;
+
+      // Set Play Store link
+      const playStoreUrl = "https://play.google.com/store/apps/details?id=" +
+        CONFIG.packageName;
+      document.getElementById("btnPlayStore").href = playStoreUrl;
+
+      // Mulai flow
+      startRedirectFlow();
+    });
+
+    // ==========================================
+    // VALIDASI ORDER ID
+    // ==========================================
+    function isValidOrderId(id) {
+      // Format: ORD-{timestamp}-{random}
+      // Contoh: ORD-1725955200000-X7K9
+      return /^ORD-\d+-[A-Z0-9]+$/.test(id);
+    }
+
+    // ==========================================
+    // FLOW REDIRECT
+    // ==========================================
+    function startRedirectFlow() {
+      // 1. Coba buka aplikasi via deep link
+      openApp();
+
+      // 2. Set timeout: jika setelah N detik masih di sini, app belum terinstall
+      let secondsLeft = Math.ceil(CONFIG.redirectTimeout / 1000);
+      const countdownEl = document.getElementById("countdown");
+      countdownEl.textContent = `Mencoba membuka dalam ${secondsLeft}s...`;
+
+      countdownIntervalId = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft > 0) {
+          countdownEl.textContent = `Mencoba membuka dalam ${secondsLeft}s...`;
+        } else {
+          countdownEl.textContent = "";
+        }
+      }, 1000);
+
+      redirectTimeoutId = setTimeout(() => {
+        if (!appOpened) {
+          showCard("cardNotInstalled");
+          stopTimers();
+        }
+      }, CONFIG.redirectTimeout);
+
+      // 3. Deteksi jika app terbuka (page jadi hidden)
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("pagehide", handlePageHide);
+      window.addEventListener("blur", handleBlur);
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "hidden") {
+        markAppOpened();
+      }
+    }
+
+    function handlePageHide() {
+      markAppOpened();
+    }
+
+    function handleBlur() {
+      // Timeout kecil — kadang blur terjadi saat sistem dialog muncul
+      setTimeout(() => {
+        if (document.visibilityState === "hidden") {
+          markAppOpened();
+        }
+      }, 100);
+    }
+
+    function markAppOpened() {
+      appOpened = true;
+      stopTimers();
+    }
+
+    function stopTimers() {
+      if (redirectTimeoutId) {
+        clearTimeout(redirectTimeoutId);
+        redirectTimeoutId = null;
+      }
+      if (countdownIntervalId) {
+        clearInterval(countdownIntervalId);
+        countdownIntervalId = null;
+      }
+    }
+
+    // ==========================================
+    // BUKA APLIKASI VIA DEEP LINK
+    // ==========================================
+    function openApp() {
+      if (!orderId) return;
+
+      const deepLink = `${CONFIG.deepLinkScheme}://${CONFIG.deepLinkHost}${CONFIG.deepLinkPathPrefix}${encodeURIComponent(orderId)}`;
+
+      // Tampilkan tombol manual jika user klik berkali-kali
+      const btnManual = document.getElementById("btnOpenManual");
+      if (btnManual) {
+        btnManual.classList.remove("hidden");
+      }
+
+      // Metode 1: window.location.href (paling kompatibel)
+      try {
+        window.location.href = deepLink;
+      } catch (e) {
+        // Metode 2: fallback via iframe (untuk beberapa browser)
+        try {
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = deepLink;
+          document.body.appendChild(iframe);
+          setTimeout(() => document.body.removeChild(iframe), 100);
+        } catch (e2) {
+          console.warn("Deep link gagal:", e2);
+        }
+      }
+    }
+
+    // ==========================================
+    // SHOW/HIDE CARD
+    // ==========================================
+    function showCard(cardId) {
+      ["cardLoading", "cardError", "cardNotInstalled"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          if (id === cardId) {
+            el.classList.remove("hidden");
+          } else {
+            el.classList.add("hidden");
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // UTILITIES
+    // ==========================================
+    function getQueryParam(name) {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+      } catch (e) {
+        // Fallback untuk browser sangat lama
+        const match = window.location.search.match(
+          new RegExp("[?&]" + name + "=([^&]*)")
+        );
+        return match ? decodeURIComponent(match[1]) : null;
+      }
+    }
+
+    function copyOrderId() {
+      if (!orderId) return;
+
+      const textarea = document.createElement("textarea");
+      textarea.value = orderId;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+
+      try {
+        document.execCommand("copy");
+        // Feedback visual
+        const btns = document.querySelectorAll(".copy-btn");
+        btns.forEach((btn) => {
+          const original = btn.textContent;
+          btn.textContent = "✓ Tersalin";
+          setTimeout(() => (btn.textContent = original), 1500);
+        });
+      } catch (e) {
+        console.warn("Gagal copy:", e);
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    }
+
+    function closePage() {
+      // Beberapa browser memblokir window.close() jika tidak dibuka via window.open()
+      window.close();
+      // Fallback: kembali ke halaman kosong
+      setTimeout(() => {
+        window.location.href = "about:blank";
+      }, 100);
+    }
+  </script>
+</body>
+</html>
