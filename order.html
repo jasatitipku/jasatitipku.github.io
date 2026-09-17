@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0F172A" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Ambil Orderan — JasaTitipku</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -134,6 +137,7 @@
       font-size: 13px;
       color: #64748B;
       margin-top: 4px;
+      min-height: 18px;
     }
 
     .btn {
@@ -215,7 +219,7 @@
       <p class="status-text">Mohon tunggu sebentar...</p>
       <p class="countdown" id="countdown"></p>
 
-      <button class="btn btn-primary hidden" id="btnOpenManual" onclick="openApp()">
+      <button class="btn btn-primary hidden" id="btnOpenManual" onclick="openApp(true)">
         Buka Aplikasi
       </button>
     </div>
@@ -244,7 +248,7 @@
       <a class="btn btn-primary" id="btnPlayStore" href="#" target="_blank" rel="noopener">
         Buka Play Store
       </a>
-      <button class="btn btn-secondary" onclick="openApp()">
+      <button class="btn btn-secondary" onclick="openApp(true)">
         Coba Buka Aplikasi Lagi
       </button>
     </div>
@@ -265,8 +269,12 @@
       // Package name untuk Play Store fallback
       packageName: "com.jasatitipku.app",
 
-      // Waktu tunggu sebelum show fallback (ms)
-      redirectTimeout: 2500,
+      // Waktu tunggu SEBELUM menampilkan fallback "app belum install"
+      // (dibuat sangat singkat — redirect instan)
+      redirectTimeout: 300,
+
+      // Delay kecil sebelum trigger deep link (biar halaman sudah render)
+      openDelay: 50,
     };
 
     // ==========================================
@@ -276,6 +284,7 @@
     let redirectTimeoutId = null;
     let countdownIntervalId = null;
     let appOpened = false;
+    let openTriggered = false;
 
     // ==========================================
     // INIT
@@ -297,7 +306,7 @@
         CONFIG.packageName;
       document.getElementById("btnPlayStore").href = playStoreUrl;
 
-      // Mulai flow
+      // Mulai flow — redirect instan
       startRedirectFlow();
     });
 
@@ -311,26 +320,15 @@
     }
 
     // ==========================================
-    // FLOW REDIRECT
+    // FLOW REDIRECT — OPTIMIZED
     // ==========================================
     function startRedirectFlow() {
-      // 1. Coba buka aplikasi via deep link
-      openApp();
+      // 1. Trigger deep link LANGSUNG (setelah sedikit delay biar halaman render)
+      setTimeout(() => {
+        openApp(false);
+      }, CONFIG.openDelay);
 
-      // 2. Set timeout: jika setelah N detik masih di sini, app belum terinstall
-      let secondsLeft = Math.ceil(CONFIG.redirectTimeout / 1000);
-      const countdownEl = document.getElementById("countdown");
-      countdownEl.textContent = `Mencoba membuka dalam ${secondsLeft}s...`;
-
-      countdownIntervalId = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft > 0) {
-          countdownEl.textContent = `Mencoba membuka dalam ${secondsLeft}s...`;
-        } else {
-          countdownEl.textContent = "";
-        }
-      }, 1000);
-
+      // 2. Fallback sangat singkat — kalau app tidak kebuka, tampilkan "belum install"
       redirectTimeoutId = setTimeout(() => {
         if (!appOpened) {
           showCard("cardNotInstalled");
@@ -338,7 +336,7 @@
         }
       }, CONFIG.redirectTimeout);
 
-      // 3. Deteksi jika app terbuka (page jadi hidden)
+      // 3. Deteksi jika app terbuka (page jadi hidden/blur)
       document.addEventListener("visibilitychange", handleVisibilityChange);
       window.addEventListener("pagehide", handlePageHide);
       window.addEventListener("blur", handleBlur);
@@ -382,32 +380,47 @@
     // ==========================================
     // BUKA APLIKASI VIA DEEP LINK
     // ==========================================
-    function openApp() {
+    // isManual = true saat user klik tombol manual
+    function openApp(isManual) {
       if (!orderId) return;
 
-      const deepLink = `${CONFIG.deepLinkScheme}://${CONFIG.deepLinkHost}${CONFIG.deepLinkPathPrefix}${encodeURIComponent(orderId)}`;
+      // Cegah double-trigger otomatis (biar tidak loop)
+      if (!isManual && openTriggered) return;
+      openTriggered = true;
 
-      // Tampilkan tombol manual jika user klik berkali-kali
+      // Tampilkan tombol manual kalau user klik berkali-kali
       const btnManual = document.getElementById("btnOpenManual");
-      if (btnManual) {
+      if (btnManual && !isManual) {
         btnManual.classList.remove("hidden");
       }
 
-      // Metode 1: window.location.href (paling kompatibel)
+      const deepLink = `${CONFIG.deepLinkScheme}://${CONFIG.deepLinkHost}${CONFIG.deepLinkPathPrefix}${encodeURIComponent(orderId)}`;
+
+      // Metode 1: window.location.href (paling kompatibel di Android)
       try {
         window.location.href = deepLink;
       } catch (e) {
-        // Metode 2: fallback via iframe (untuk beberapa browser)
-        try {
-          const iframe = document.createElement("iframe");
-          iframe.style.display = "none";
-          iframe.src = deepLink;
-          document.body.appendChild(iframe);
-          setTimeout(() => document.body.removeChild(iframe), 100);
-        } catch (e2) {
-          console.warn("Deep link gagal:", e2);
-        }
+        console.warn("Method 1 gagal:", e);
       }
+
+      // Metode 2: Fallback via iframe (untuk sebagian browser)
+      setTimeout(() => {
+        if (!appOpened) {
+          try {
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.src = deepLink;
+            document.body.appendChild(iframe);
+            setTimeout(() => {
+              if (iframe.parentNode) {
+                iframe.parentNode.removeChild(iframe);
+              }
+            }, 200);
+          } catch (e2) {
+            console.warn("Deep link iframe gagal:", e2);
+          }
+        }
+      }, 150);
     }
 
     // ==========================================
